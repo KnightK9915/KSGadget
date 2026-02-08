@@ -29,7 +29,7 @@ except ImportError as e:
 def main():
     st.set_page_config(page_title="コメントシート集計ツール", layout="centered")
     
-    st.title("TA用コメントシート集計自動化ツール")
+    st.title("コメントシート集計自動化ツール")
     st.markdown("""
     複数のコメントシート(Excel)をアップロードして、一つにまとめます。
     """)
@@ -46,9 +46,9 @@ def main():
         accept_multiple_files=True
     )
     
-    st.subheader("2. 出席簿 (Attendance Sheet) (KogibetuSeisekiから始まるファイルを選択してください)[任意]")
+    st.subheader("2. 出席簿 (Attendance Sheet) [任意]")
     attendance_file = st.file_uploader(
-        "出席簿を選択してください (オプション)", 
+        "出席簿 (KogibetuSeisekiから始まるファイル) を選択してください (オプション)", 
         type=["xlsx", "xls"]
     )
 
