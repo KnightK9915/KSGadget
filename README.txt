@@ -125,15 +125,9 @@ please ask a student who knows Python to modify the code as follows.
     *   Run directly: `python src/gui_app.py`
     *   Rebuild exe: `pyinstaller --onefile --noconsole --name "CommentAggregatorUI" --clean --hidden-import=xlrd src/gui_app.py`
 
---------------------------------------------------------------------------------
-3. How to Install on Mac
---------------------------------------------------------------------------------
-1.  Open Terminal.
-2.  Navigate to this folder (`comment_sheet_aggregator`).
-3.  Run the following command to set up and build the app:
-    sh setup_mac.sh
-4.  When finished, `CommentAggregator.app` will be created in the `dist` folder.
-5.  Move it to your Applications folder or double-click to run.
+【Mac】
+Macの方は、以下の「Web版」をご利用ください。
+
 --------------------------------------------------------------------------------
 4. Web版 (Streamlit) の実行 (How to Run Web Version)
 --------------------------------------------------------------------------------
@@ -142,12 +136,6 @@ Webブラウザ上で動作するバージョンも用意しました。
 【Windows】
 フォルダ内にある `run_web_app.bat` をダブルクリックするだけで起動します。
 
-【Mac】
-1.  セットアップがまだの場合は、一度だけ `sh setup_mac.sh` を実行してください。
-2.  そのあとは、`run_web_app_mac.command` をダブルクリックするだけで起動します。
-    
-    ⚠️ **「権限がありません」や「開けません」と言われる場合**:
-    ターミナルで以下のコマンドを**1回だけ**実行してください（ファイルの実行権限を付与します）：
-    chmod +x run_web_app_mac.command
-    
-    (※初回のみ、「開発元が未確認」等の警告が出る場合があります。その場合は右クリック→「開く」を選択してください)
+【Mac / Linux】
+ターミナルで以下を実行してください：
+streamlit run src/streamlit_app.py
