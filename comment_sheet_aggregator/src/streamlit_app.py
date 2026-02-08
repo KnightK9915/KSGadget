@@ -1,10 +1,26 @@
-import streamlit as st
+import sys
 import os
+
+# Ensure the current directory (src) is in sys.path so we can import aggregator
+current_dir = os.path.dirname(os.path.abspath(__file__))
+if current_dir not in sys.path:
+    sys.path.append(current_dir)
+
+import streamlit as st
 import tempfile
 import shutil
 import pandas as pd
 from datetime import datetime
-from aggregator import process_files
+
+try:
+    from aggregator import process_files
+except ModuleNotFoundError:
+    # Fallback: try importing as src.aggregator if run from root
+    try:
+        from src.aggregator import process_files
+    except ImportError:
+        st.error("Critical Error: Could not import 'aggregator.py'. Please check file structure.")
+        st.stop()
 
 def main():
     st.set_page_config(page_title="コメントシート集計ツール", layout="centered")
