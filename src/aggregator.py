@@ -10,6 +10,31 @@ import unicodedata
 # Suppress openpyxl warnings if any
 warnings.filterwarnings("ignore")
 
+# ==============================================================================
+# CONFIGURATION (設定)
+# もし大学のシステムが変わり、Excelの「列」や「行」の位置が変わった場合は、以下の数字を調整してください
+# If Excel format changes, please modify these numbers
+# ==============================================================================
+CONFIG = {
+    # --- 1. Comment Sheet (コメントシート) ---
+    # A=0, B=1, C=2, D=3, E=4, F=5, G=6 ...
+    "COL_SUB_ID": 0,    # A列: Submission ID
+    "COL_COURSE": 2,    # C列: Course Name (Year checks this)
+    "COL_NAME": 4,      # E列: Student Name
+    "COL_ID": 5,        # F列: Student ID
+    "COL_COMMENT": 6,   # G列: Comment Body
+    
+    # Minimum columns required to be valid
+    # precise logic: max(indices) + 1. Since COL_COMMENT is 6, we need 7.
+    "MIN_COLS": 7,     
+
+    # --- 2. Attendance Sheet (出席簿) ---
+    "ATT_SKIP_ROWS": 6, # Number of header rows to skip (Data starts at Row 7)
+    "ATT_COL_ID": 1,    # B列: Student ID
+    "ATT_COL_NAME": 2,  # C列: Student Name
+}
+# ==============================================================================
+
 def process_files(input_files, output_file, target_year=None, attendance_file=None):
     """
     Reads selected Excel files, aggregates comments, and saves to output_file.
@@ -29,23 +54,25 @@ def process_files(input_files, output_file, target_year=None, attendance_file=No
         print(f"Loading attendance sheet: {os.path.basename(attendance_file)}")
         try:
             # Read Attendance Sheet
-            # Assume Col B (Index 1) = ID, Col C (Index 2) = Name
-            # User specified: Data starts from Row 7 (index 6). Rows 1-6 are junk.
+            skip_count = CONFIG["ATT_SKIP_ROWS"]
             att_df = pd.read_excel(attendance_file, header=None)
             
-            # Slice to skip first 6 rows
-            if len(att_df) > 6:
-                att_df = att_df.iloc[6:]
+            # Slice to skip rows
+            if len(att_df) > skip_count:
+                att_df = att_df.iloc[skip_count:]
             else:
-                print("Attendance sheet has fewer than 7 rows.")
+                print(f"Attendance sheet has fewer than {skip_count + 1} rows.")
                 return False, "Attendance sheet is too short/empty."
             
+            id_idx = CONFIG["ATT_COL_ID"]
+            name_idx = CONFIG["ATT_COL_NAME"]
+
             for _, row in att_df.iterrows():
-                if pd.isna(row[1]):
+                if pd.isna(row[id_idx]):
                     continue
                 
-                s_id = str(row[1]).strip()
-                s_name = str(row[2]).strip() if not pd.isna(row[2]) else ""
+                s_id = str(row[id_idx]).strip()
+                s_name = str(row[name_idx]).strip() if not pd.isna(row[name_idx]) else ""
                 
                 # Heuristic to skip headers
                 if s_id.lower() in ["学籍番号", "id", "student id", "headerid", "number"]:
@@ -85,29 +112,25 @@ def process_files(input_files, output_file, target_year=None, attendance_file=No
             wb_in = load_workbook(file_path, data_only=True) # data_only=True gets values, but styles are on the cell
             ws_in = wb_in.active
             
-            # Convert to list of rows to iterate easily
-            # We expect columns A-G (0-6)
-            # Row 1 might be header, but we usually assume raw data as per previous logic (header=None in pandas)
-            # Pandas read_excel(header=None) treats 1st row as data. 
-            # So we iterate all rows.
+            min_cols = CONFIG["MIN_COLS"]
             
             for row in ws_in.iter_rows():
                 # Check sufficient columns (at least 7: A..G)
-                if len(row) < 7:
+                if len(row) < min_cols:
                     continue
                     
                 # Extract values (converting to string same as pandas default roughly)
                 def get_val(cell):
                     return str(cell.value) if cell.value is not None else ""
                 
-                sub_id_col = get_val(row[0])
-                course_col = get_val(row[2])
-                name_col   = get_val(row[4])
-                id_col     = get_val(row[5])
-                comment_col = get_val(row[6])
+                sub_id_col = get_val(row[CONFIG["COL_SUB_ID"]])
+                course_col = get_val(row[CONFIG["COL_COURSE"]])
+                name_col   = get_val(row[CONFIG["COL_NAME"]])
+                id_col     = get_val(row[CONFIG["COL_ID"]])
+                comment_col = get_val(row[CONFIG["COL_COMMENT"]])
                 
-                # Get Style from Comment Cell (row[6])
-                comment_cell = row[6]
+                # Get Style from Comment Cell
+                comment_cell = row[CONFIG["COL_COMMENT"]]
                 fill_color = None
                 if comment_cell.fill and comment_cell.fill.patternType == 'solid':
                     # Extract ARGB hex

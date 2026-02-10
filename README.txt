@@ -1,141 +1,119 @@
 ================================================================================
-README.txt
-コメントシート集計ツール / Comment Sheet Aggregator
+Comment Sheet Aggregator / コメントシート集計ツール
 ================================================================================
 
 [日本語 / Japanese]
 
+■ 1. 概要
+このツールは、教務システム等からダウンロードした「日ごとの学生コメントシート (Excel)」を読み込み、
+学生ごとに1行にまとめた「集計結果 (Excel)」を作成するツールです。
+
+■ 2. 使い方 (3つの方法)
+
+   【A. Web版を使う (推奨)】
+   インストール不要で、スマホやMacでも使えます。
+   URL: https://ksgadget-csa.streamlit.app/
+
+   【B. Windowsアプリを使う】
+   フォルダ内の `コメントシート集計ツール.exe` をダブルクリックして起動します。
+   1. 「1. コメントシート選択」: 集計したいExcelファイルを全て選びます。
+   2. 「2. 出席簿を選択 (任意)」: 出席簿があれば選択します（学生ID順に並び変えるため）。
+   3. 「対象年度 (任意)」: "2025" のように入力すると、その年度の学生だけ抽出します。
+   4. 「集計開始」ボタンを押すと、結果の保存先を聞かれます。
+
+   【C. Web版をローカルで動かす (開発者向け)】
+   `run_web_app.bat` をダブルクリックすると、自分のパソコン上でWeb版が起動します。
+
+■ 3. メンテナンス・修正ガイド (重要)
+もし大学のシステムが変わり、Excelの「列」や「行」の位置が変わった場合は、
+以下の手順で `src/aggregator.py` を修正してください。
+
+   【修正するファイル】
+   `src/aggregator.py` (メモ帳やテキストエディタで開いてください)
+
+   【修正方法】
+   ファイルの一番上に「CONFIGURATION (設定)」というエリアがあります。
+   ここの数字を書き換えるだけで対応できます。
+   
+   ------------------------------------------------------------
+   CONFIG = {
+       # --- 1. Comment Sheet (コメントシート) ---
+       "COL_SUB_ID": 0,    # A列
+       "COL_COURSE": 2,    # C列
+       "COL_NAME": 4,      # E列 (氏名)
+       "COL_ID": 5,        # F列 (学籍番号)
+       "COL_COMMENT": 6,   # G列 (コメント)
+       
+       # --- 2. Attendance Sheet (出席簿) ---
+       "ATT_SKIP_ROWS": 6, # 上から読み飛ばす行数
+       "ATT_COL_ID": 1,    # B列 (学籍番号)
+       "ATT_COL_NAME": 2,  # C列 (氏名)
+   }
+   ------------------------------------------------------------
+   例えば「氏名」がC列に移動したら、`"COL_NAME": 2` に書き換えてください。
+   (※ A列=0, B列=1, C列=2 ... というルールです)
+
+   【修正後の反映方法】
+   修正が終わったら、フォルダにある `build_exe.bat` をダブルクリックしてください。
+   自動的に新しい `コメントシート集計ツール.exe` が作成されます。
+
+■ 4. フォルダの整理 (削除しても良いファイル)
+`build_exe.bat` を実行した後、自動的に掃除されますが、もし残っていたら以下は削除して大丈夫です。
+
+   * `build/` フォルダ (作業用の一時ファイル)
+   * `dist/` フォルダ (作成中のexe置き場)
+   * `*.spec` ファイル (ビルド設定ファイル)
+   * `__pycache__/` フォルダ
+
 --------------------------------------------------------------------------------
-1. 使用方法 (How to Use)
---------------------------------------------------------------------------------
-このツールは、複数の学生からのコメントシート Excel ファイルを読み込み、
-一つの Excel ファイルに集計・整理するためのものです。
-
-【手順】
-1.  `CommentAggregatorUI.exe` をダブルクリックして起動します。
-2.  「ファイル選択」ボタンをクリックし、集計したいコメントシートの Excel ファイル（複数可）を選択します。
-3.  （任意）「対象年度」を入力します（例: 2025）。入力すると、C列（科目名など）がその年度で始まる行のみを抽出します。
-4.  （任意）「出席表選択」ボタンをクリックし、出席簿の Excel ファイルを選択します。
-    *   出席簿があると、欠席者の確認や、学籍番号順の並び替え、氏名の正規化（漢字表記への統一）が自動で行われます。
-5.  「実行」ボタンをクリックします。
-6.  処理が完了すると、`output` フォルダに `summary_YYYYMMDD_HHMMSS.xlsx` という名前で集計結果が保存されます。
-
-【主な機能】
-*   **重複排除**: 同一学生が同じ日に複数回提出している場合、提出番号（A列）が最大のものを採用します。
-*   **名前寄せ (名寄せ)**: 学籍番号の入力ミスがあっても、氏名が一致していれば出席簿の情報に基づいて修正・集計します。
-*   **色情報の保持**: コメントシートで黄色などに塗りつぶされたセルは、集計後もそのままの色で出力されます。
-*   **未回答のハイライト**: 未提出または未回答のセルは「薄い赤色」でハイライトされます。
-
---------------------------------------------------------------------------------
-2. 将来、Excelの形式が変わった場合の修正方法 (How to Modify Source Code)
---------------------------------------------------------------------------------
-★重要★
-将来、教务システムの変更により、コメントシートの列の並び順が変わった場合（例：氏名がE列からF列に移動した等）、
-Pythonがわかる学生に以下の修正を依頼してください。
-
-【修正対象ファイル】
-`src/aggregator.py`
-
-【修正手順】
-1.  `src/aggregator.py` をテキストエディタ（VS Code, メモ帳など）で開きます。
-2.  `WS_IN.ITER_ROWS` (小文字で `ws_in.iter_rows`) という箇所を探し、その直下にあるデータ読み込み部分を見つけます。
-    
-    ```python
-    # 現在のコード（例）
-    sub_id_col = get_val(row[0])  # A列 (0番目)
-    course_col = get_val(row[2])  # C列 (2番目)
-    name_col   = get_val(row[4])  # E列 (4番目)
-    id_col     = get_val(row[5])  # F列 (5番目)
-    comment_col = get_val(row[6]) # G列 (6番目)
-    ```
-
-3.  上記の数字 `[]` の中身を変更してください。
-    *   Excelの列は 0 から始まります（A列=0, B列=1, C列=2, D列=3, E列=4, F列=5, G列=6 ...）。
-    *   例えば、氏名が「F列」に移動した場合は、`name_col = get_val(row[4])` を `get_val(row[5])` に変更します。
-
-4.  ファイルを保存します。
-5.  修正を反映させるには、Python環境で直接実行するか、`PyInstaller` を使って exe ファイルを作り直す必要があります。
-    *   直接実行する場合: `python src/gui_app.py`
-    *   exe再作成する場合: `pyinstaller --onefile --noconsole --name "CommentAggregatorUI" --clean --hidden-import=xlrd src/gui_app.py`
-
---------------------------------------------------------------------------------
-3. Macでのインストールと実行 (How to Install on Mac)
---------------------------------------------------------------------------------
-1.  ターミナル (Terminal) を開きます。
-2.  このフォルダ (`comment_sheet_aggregator`) に移動します。
-3.  以下のコマンドを実行して、セットアップとアプリの作成を行います。
-    sh setup_mac.sh
-4.  処理が完了すると、`dist` フォルダの中に `CommentAggregator.app` が作成されます。
-5.  これをアプリケーションフォルダに移動するか、ダブルクリックして実行してください。
-
-================================================================================
 
 [English]
 
---------------------------------------------------------------------------------
-1. How to Use
---------------------------------------------------------------------------------
-This tool aggregates comment sheets from multiple student Excel files into a single summary Excel file.
+■ 1. Overview
+This tool aggregates multiple daily "Student Comment Sheets" (Excel) into a single summary Excel file, grouped by student.
 
-【Steps】
-1.  Double-click `CommentAggregatorUI.exe` to launch the application.
-2.  Click "Select Files" to choose the student Excel files you want to process.
-3.  (Optional) Enter "Target Year" (e.g., 2025). This filters entries based on the Course Name column (starts with the year).
-4.  (Optional) Click "Select Attendance Sheet" to load a master student list.
-    *   This enables sorting by ID, identifying missing students, and normalizing names.
-5.  Click "Run".
-6.  The output file will be saved in the `output` folder as `summary_YYYYMMDD_HHMMSS.xlsx`.
+■ 2. How to Use
 
-【Key Features】
-*   **Deduplication**: Keeps the latest submission if a student submits multiple files for the same date.
-*   **Fuzzy Name Matching**: Corrects student IDs if they are wrong but the name matches the attendance sheet.
-*   **Color Preservation**: Preserves cell background colors (e.g., yellow highlights) from input files.
-*   **Unanswered Highlight**: Missing entries are highlighted in light red.
+   【A. Web Version (Recommended)】
+   No installation required. Works on Mobile/Mac.
+   URL: https://ksgadget-csa.streamlit.app/
 
---------------------------------------------------------------------------------
-2. How to Modify the Source Code (For Maintenance)
---------------------------------------------------------------------------------
-★IMPORTANT★
-If the university's Excel format changes in the future (e.g., the "Name" column moves from Column E to Column F),
-please ask a student who knows Python to modify the code as follows.
+   【B. Windows Application】
+   Double-click `コメントシート集計ツール.exe`.
+   1. Select input Excel files.
+   2. (Optional) Select Attendance Sheet for sorting.
+   3. (Optional) Enter Target Year (e.g., 2025).
+   4. Click "Run" to save the summary.
 
-【File to Modify】
-`src/aggregator.py`
+   【C. Local Web Version】
+   Double-click `run_web_app.bat` to launch the Streamlit app locally on your PC.
 
-【Instruction】
-1.  Open `src/aggregator.py` with a text editor (VS Code, Notepad, etc.).
-2.  Search for the section inside the loop `for row in ws_in.iter_rows():`.
-    You will see lines that extract data such as:
+■ 3. Maintenance Guide
+If the university's Excel format changes (e.g., column positions change), edit `src/aggregator.py`.
 
-    ```python
-    # Current Code Example
-    sub_id_col = get_val(row[0])  # Column A (Index 0)
-    course_col = get_val(row[2])  # Column C (Index 2)
-    name_col   = get_val(row[4])  # Column E (Index 4) -> Name
-    id_col     = get_val(row[5])  # Column F (Index 5) -> Student ID
-    comment_col = get_val(row[6]) # Column G (Index 6) -> Comment
-    ```
+   【File to Edit】
+   `src/aggregator.py`
 
-3.  Update the index number inside `[]`.
-    *   Excel columns are 0-indexed (A=0, B=1, ... E=4, F=5, G=6).
-    *   Example: If the Name moves to Column F, change `row[4]` to `row[5]`.
+   【How to Edit】
+   Look for the "CONFIGURATION" section at the top of the file.
+   Change the numbers to match the new Excel layout.
 
-4.  Save the file.
-5.  To apply changes, you must run the script directly with Python or rebuild the exe.
-    *   Run directly: `python src/gui_app.py`
-    *   Rebuild exe: `pyinstaller --onefile --noconsole --name "CommentAggregatorUI" --clean --hidden-import=xlrd src/gui_app.py`
+   ------------------------------------------------------------
+   CONFIG = {
+       "COL_NAME": 4,      # Column E (Name)
+       "COL_ID": 5,        # Column F (Student ID)
+       "ATT_SKIP_ROWS": 6, # Rows to skip
+       ...
+   }
+   ------------------------------------------------------------
+   * Columns are 0-indexed (A=0, B=1, C=2...).
 
-【Mac】
-Macの方は、以下の「Web版」をご利用ください。
+   【How to Rebuild EXE】
+   After editing, double-click `build_exe.bat`. It will automatically generate a new `コメントシート集計ツール.exe`.
 
---------------------------------------------------------------------------------
-4. Web版 (Streamlit) の実行 (How to Run Web Version)
---------------------------------------------------------------------------------
-Webブラウザ上で動作するバージョンも用意しました。
-
-【Windows】
-フォルダ内にある `run_web_app.bat` をダブルクリックするだけで起動します。
-
-【Mac / Linux】
-ターミナルで以下を実行してください：
-streamlit run src/streamlit_app.py
+■ 4. Cleanup
+The following files/folders are temporary and can be safely deleted:
+   * `build/` folder
+   * `dist/` folder
+   * `*.spec` files
+   * `__pycache__/` folder
