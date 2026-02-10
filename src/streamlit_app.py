@@ -27,36 +27,86 @@ except ImportError as e:
         st.stop()
 
 def main():
-    st.set_page_config(page_title="コメントシート集計ツール", layout="centered")
-    
-    st.title("📑 コメントシート集計ツール (Web版)")
-    st.markdown("""
-    複数のコメントシート(Excel)をアップロードして、一つにまとめます。
-    既存のWindows/Macアプリと同じロジックを使用しています。
-    """)
-    
-    # --- Sidebar / Settings ---
-    st.sidebar.header("設定 (Settings)")
-    target_year = st.sidebar.text_input("対象年度 (例: 2025)", placeholder="2025")
-    
-    # --- File Upload ---
-    st.subheader("1. ファイル選択 (Input Files)")
-    uploaded_files = st.file_uploader(
-        "学生のコメントシートを選択してください (複数可)", 
-        type=["xlsx", "xls"], 
-        accept_multiple_files=True
-    )
-    
-    st.subheader("2. 出席簿 (Attendance Sheet) [任意]")
-    attendance_file = st.file_uploader(
-        "出席簿を選択してください (オプション)", 
-        type=["xlsx", "xls"]
+    st.set_page_config(
+        page_title="コメントシート集計ツール", 
+        page_icon="📑", 
+        layout="centered",
+        initial_sidebar_state="expanded"
     )
 
+    # --- Custom CSS for Mobile Optimization ---
+    st.markdown("""
+        <style>
+        .stButton>button {
+            width: 100%;
+            border-radius: 20px;
+            font-weight: bold;
+            height: 3em;
+        }
+        .main .block-container {
+            padding-top: 2rem;
+            padding-bottom: 2rem;
+        }
+        h1 {
+            font-size: 1.8rem !important;
+        }
+        .upload-box {
+            border: 2px dashed #ccc;
+            padding: 20px;
+            text-align: center;
+            border-radius: 10px;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+    
+    # --- Header ---
+    st.title("📑 コメントシート集計")
+    st.caption("Excelファイルをアップロードして、一人一行にまとめます。")
+
+    with st.expander("ℹ️ 使い方 (How to use)", expanded=False):
+        st.markdown("""
+        1. **「コメントシート」** (複数可) をアップロードします。
+        2. (任意) **「出席簿」** をアップロードすると、学籍番号順に並び替えられます。
+        3. サイドバーで **「対象年度」** を指定できます。
+        4. **「集計開始」** ボタンを押すと、結果がダウンロードできます。
+        """)
+    
+    # --- Sidebar / Settings ---
+    with st.sidebar:
+        st.header("⚙️ 設定 (Settings)")
+        target_year = st.text_input("対象年度 (例: 2025)", placeholder="空白なら全期間")
+        st.info("※ 空白の場合は、すべてのデータを集計します。")
+    
+    # --- Layout ---
+    
+    # Step 1: Input Files
+    st.subheader("1️⃣ コメントシート (必須)")
+    uploaded_files = st.file_uploader(
+        "ここにExcelファイルをドラッグ＆ドロップ", 
+        type=["xlsx", "xls"], 
+        accept_multiple_files=True,
+        key="comments"
+    )
+    
+    if uploaded_files:
+        st.success(f"{len(uploaded_files)} 個のファイルを選択中")
+
+    st.divider()
+
+    # Step 2: Attendance (Optional)
+    st.subheader("2️⃣ 出席簿 (オプション)")
+    attendance_file = st.file_uploader(
+        "出席簿 (Excel) がある場合はここで選択", 
+        type=["xlsx", "xls"],
+        key="attendance"
+    )
+
+    st.divider()
+
     # --- Processing ---
-    if st.button("集計開始 (Run Aggregation)", type="primary"):
+    if st.button("🚀 集計開始 (Start Aggregation)", type="primary"):
         if not uploaded_files:
-            st.error("⚠️ コメントシートを選択してください。")
+            st.warning("⚠️ まずはコメントシートを選択してください。")
             return
 
         # Create a temporary directory to store uploaded files
@@ -65,15 +115,20 @@ def main():
             input_dir = os.path.join(temp_dir, "input")
             os.makedirs(input_dir, exist_ok=True)
             
+            # Progress Bar
+            progress_bar = st.progress(0)
+            status_text = st.empty()
+            
+            status_text.text("📂 ファイルを読み込んでいます...")
+            
             # Save Input Files
             input_paths = []
-            for uploaded_file in uploaded_files:
+            for i, uploaded_file in enumerate(uploaded_files):
                 file_path = os.path.join(input_dir, uploaded_file.name)
                 with open(file_path, "wb") as f:
                     f.write(uploaded_file.getbuffer())
                 input_paths.append(file_path)
-            
-            st.info(f"📄 {len(input_paths)} 個のファイルを読み込みました。")
+                progress_bar.progress((i + 1) / len(uploaded_files) * 0.3) # First 30%
             
             # Save Attendance File
             attendance_path = None
@@ -81,27 +136,25 @@ def main():
                 attendance_path = os.path.join(temp_dir, attendance_file.name)
                 with open(attendance_path, "wb") as f:
                     f.write(attendance_file.getbuffer())
-                st.info(f"📋 出席簿: {attendance_file.name}")
+                status_text.text("📋 出席簿を処理中...")
 
             # Define Output Path
             output_filename = f"summary_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
             output_path = os.path.join(temp_dir, output_filename)
             
             # Run Aggregation logic
-            status_text = st.empty()
-            status_text.text("⏳ 集計中... (Processing...)")
+            status_text.text("⏳ 集計処理を実行中... (これには数秒かかる場合があります)")
+            progress_bar.progress(0.6)
             
             try:
-                # Redirect print output to capture logs if needed, but for now just run it
-                # The aggregator returns (Success, Message)
-                # But looking at src/aggregator.py, process_files returns nothing? 
-                # Let's double check aggregator.py signature. It prints to console.
-                # Assuming it works if no exception.
+                # Run the actual aggregation
+                success, msg = process_files(input_paths, output_path, target_year, attendance_path)
                 
-                process_files(input_paths, output_path, target_year, attendance_path)
+                progress_bar.progress(1.0)
                 
-                if os.path.exists(output_path):
-                    status_text.success("✅ 集計完了！ (Done!)")
+                if success and os.path.exists(output_path):
+                    status_text.success("✅ 集計完了！")
+                    st.balloons()
                     
                     # Read the result file for download
                     with open(output_path, "rb") as f:
@@ -111,13 +164,14 @@ def main():
                         label="📥 結果をダウンロード (Download Result)",
                         data=file_data,
                         file_name=output_filename,
-                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        type="primary"
                     )
                 else:
-                    status_text.error("❌ エラー: 出力ファイルが生成されませんでした。")
+                    status_text.error(f"❌ エラー: {msg}")
                     
             except Exception as e:
-                status_text.error(f"❌ エラーが発生しました: {e}")
+                status_text.error(f"❌ 予期せぬエラー: {e}")
 
 if __name__ == "__main__":
     main()
