@@ -35,7 +35,8 @@ TRANSLATIONS = {
         "file_selection_cancelled": "ファイルの選択がキャンセルされました。",
         "att_selection_cancelled": "出席表の選択がキャンセルされました。",
         "critical_error": "致命的なエラー: ",
-        "save_as": "保存先を指定"
+        "save_as": "保存先を指定",
+        "footer": "制作：2025年度院生（有志）"
     },
     "EN": {
         "title": "Comment Sheet Aggregator",
@@ -64,7 +65,8 @@ TRANSLATIONS = {
         "file_selection_cancelled": "File selection cancelled.",
         "att_selection_cancelled": "Attendance selection cancelled.",
         "critical_error": "CRITICAL ERROR: ",
-        "save_as": "Save Output As"
+        "save_as": "Save Output As",
+        "footer": "Developed by 2025 Graduate Students"
     }
 }
 
@@ -98,6 +100,7 @@ class CommentAggregatorApp:
         self.style.configure('TButton', font=self.default_font, padding=3)
         self.style.configure('TLabel', font=self.default_font)
         self.style.configure('TLabelframe.Label', font=self.header_font, foreground="#003399")
+        self.style.configure('Small.TLabel', font=("Segoe UI" if self.is_windows else "Helvetica", 8))
         
         # Current Language (Default JP)
         self.lang = "JP"
@@ -171,6 +174,10 @@ class CommentAggregatorApp:
         # Log Area
         self.log_area = scrolledtext.ScrolledText(self.frame_action, height=6, state='disabled', font=("Consolas", 9), bg="#f8f9fa", relief=tk.FLAT)
         self.log_area.pack(fill=tk.BOTH, expand=True)
+
+        # Footer (Credits)
+        self.label_footer = ttk.Label(main_frame, style='Small.TLabel', foreground="gray")
+        self.label_footer.pack(side=tk.BOTTOM, anchor=tk.E, pady=(5, 0))
         
         # Apply Text
         self.update_ui_text()
@@ -216,7 +223,10 @@ class CommentAggregatorApp:
         self.label_year_desc.config(text=t["year_desc"])
         
         self.frame_action.config(text=t["step3"])
+        self.frame_action.config(text=t["step3"])
         self.btn_run.config(text=t["run"])
+        
+        self.label_footer.config(text=t["footer"])
 
     def log(self, message):
         self.log_area.config(state='normal')

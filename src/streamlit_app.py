@@ -173,5 +173,17 @@ def main():
             except Exception as e:
                 status_text.error(f"❌ 予期せぬエラー: {e}")
 
+    # --- Footer ---
+    st.markdown("---")
+    st.markdown(
+        """
+        <div style='text-align: center; color: gray; font-size: 0.8em;'>
+        制作：2025年度院生（有志）<br>
+        Developed by 2025 Graduate Students
+        </div>
+        """, 
+        unsafe_allow_html=True
+    )
+
 if __name__ == "__main__":
     main()
