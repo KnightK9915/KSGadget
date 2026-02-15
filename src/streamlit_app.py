@@ -60,8 +60,8 @@ def main():
     """, unsafe_allow_html=True)
     
     # --- Header ---
-    st.title("📑 コメントシート集計")
-    st.caption("Excelファイルをアップロードして、一人一行にまとめます。")
+    st.title("📑 コメントシート集計自動化ツール")
+    st.caption("複数のコメントシートをアップロードして、必要な箇所だけ抽出して一つのExcelに整理するツール")
 
     with st.expander("ℹ️ 使い方 (How to use)", expanded=False):
         st.markdown("""
@@ -82,7 +82,7 @@ def main():
     # Step 1: Input Files
     st.subheader("1️⃣ コメントシート (必須)")
     uploaded_files = st.file_uploader(
-        "ここにExcelファイルをドラッグ＆ドロップ", 
+        "ここにExcelファイルを選択してください",
         type=["xlsx", "xls"], 
         accept_multiple_files=True,
         key="comments"
@@ -91,12 +91,11 @@ def main():
     if uploaded_files:
         st.success(f"{len(uploaded_files)} 個のファイルを選択中")
 
-    st.divider()
 
     # Step 2: Attendance (Optional)
     st.subheader("2️⃣ 出席簿 (オプション)")
     attendance_file = st.file_uploader(
-        "出席簿 (Excel) がある場合はここで選択", 
+        "出席簿 (「KogibetuSeiseki_」から始まるExcelファイル) がある場合はここで選択", 
         type=["xlsx", "xls"],
         key="attendance"
     )
